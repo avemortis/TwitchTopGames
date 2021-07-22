@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/game_item_poster"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <TextView
+        android:id="@+id/game_item_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:textColor="@color/black"
+        android:text="@string/game_name"
+        android:textSize="20sp"
+        app:layout_constraintStart_toEndOf="@+id/game_item_poster"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/game_item_viewers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/viewers"
+        android:textColor="@color/purple_500"
+        app:layout_constraintStart_toEndOf="@+id/game_item_poster"
+        app:layout_constraintTop_toBottomOf="@+id/game_item_name" />
+
+    <TextView
+        android:id="@+id/game_item_channels"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:textColor="@color/red"
+        android:text="@string/channels_online"
+        app:layout_constraintStart_toEndOf="@+id/game_item_poster"
+        app:layout_constraintTop_toBottomOf="@+id/game_item_viewers" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginEnd="2dp"
+        app:layout_constraintBottom_toBottomOf="@+id/game_item_channels"
+        app:layout_constraintEnd_toStartOf="@+id/game_item_channels"
+        app:layout_constraintTop_toTopOf="@+id/game_item_channels"
+        app:srcCompat="@android:drawable/ic_notification_overlay" />
+</androidx.constraintlayout.widget.ConstraintLayout>
