@@ -6,8 +6,6 @@ class GameId (
     @SerializedName("id") var id: Int = 0,
     @SerializedName("name") var name: String = "",
     @SerializedName("box_art_url") var posterUrl: String = "",
-    var streams: Int,
-    var viewers: Int
 ){
     fun setRes(weight : Int, height : Int){
         posterUrl = posterUrl.replace("{width}", weight.toString())

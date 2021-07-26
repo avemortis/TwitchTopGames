@@ -1,6 +1,8 @@
 package com.example.twitchtopgames
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +17,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.twitchtopgames.api.TwitchServices
 import com.example.twitchtopgames.api.games.model.GameId
+import com.example.twitchtopgames.api.games.model.Streams
 import com.squareup.picasso.Picasso
 
 private const val TAG = "GamesTopFragment"
@@ -32,8 +35,7 @@ class GameTopFragment : Fragment(){
 
     private lateinit var gameRecyclerView: RecyclerView
     private lateinit var gameAdapter: GameAdapter
-
-    val lab = GamesStatLab
+    private lateinit var backgroundDownloader: BackgroundDownloader<GameHolder>
 
     private val viewModel: GameTopFragmentViewModel by lazy {
         ViewModelProvider(this).get(GameTopFragmentViewModel::class.java)
@@ -47,8 +49,16 @@ class GameTopFragment : Fragment(){
 
         val services = TwitchServices
 
+        val responseHandler = Handler(Looper.getMainLooper())
+        backgroundDownloader = BackgroundDownloader(clientId, responseHandler) {
+            gameHolder, streams ->
+            gameHolder.setStreams(streams)
+        }
+        lifecycle.addObserver(backgroundDownloader.fragmentLifecycleObserver)
+
         if(savedInstanceState!=null){
             accessesToken = savedInstanceState.getString(TOKEN_TAG)!!
+            backgroundDownloader.token = accessesToken
         }
 
         if (accessesToken.isEmpty()){
@@ -59,6 +69,7 @@ class GameTopFragment : Fragment(){
                         response ->
                         accessesToken = response
                         Log.d(TAG, accessesToken)
+                        backgroundDownloader.token = accessesToken
                         getGames(accessesToken)
                 }
             )
@@ -70,6 +81,10 @@ class GameTopFragment : Fragment(){
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        viewLifecycleOwner.lifecycle.addObserver(
+            backgroundDownloader.viewLifecycleObserver
+        )
+
         val view = inflater.inflate(R.layout.fragment_game_top, container, false)
 
         gameRecyclerView = view.findViewById(R.id.game_recycler_view)
@@ -92,7 +107,20 @@ class GameTopFragment : Fragment(){
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(TOKEN_TAG, accessesToken)
-        outState.putParcelable(STATE_TAG, gameRecyclerView.layoutManager?.onSaveInstanceState())
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewLifecycleOwner.lifecycle.removeObserver(
+            backgroundDownloader.fragmentLifecycleObserver
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        lifecycle.removeObserver(
+            backgroundDownloader.fragmentLifecycleObserver
+        )
     }
 
     fun getGames(token: String, cursor: String = String()) {
@@ -107,7 +135,7 @@ class GameTopFragment : Fragment(){
         )
     }
 
-    private class GameHolder(item: View) : RecyclerView.ViewHolder(item){
+    private inner class GameHolder(item: View) : RecyclerView.ViewHolder(item){
         var gameName: TextView? = null
         var gamePoster: ImageView? = null
         var gameViewers: TextView? = null
@@ -119,9 +147,23 @@ class GameTopFragment : Fragment(){
             gameViewers = item.findViewById(R.id.game_item_viewers)
             gameStreams = item.findViewById(R.id.game_item_channels)
         }
+        fun setStreams(streams : Streams){
+            val pos = gameRecyclerView.getChildAdapterPosition(itemView)
+            if (pos != -1){
+                var count = 0
+                streams.streams.forEach{
+                        stream ->
+                    count+=stream.viewers
+                }
+
+                viewModel.channels[pos] = streams.streams.size
+                viewModel.viewers[pos] = count
+                gameAdapter.notifyItemChanged(pos)
+            }
+        }
     }
 
-    private class GameAdapter (val gamesIds: List<GameId>) : RecyclerView.Adapter<GameHolder>(){
+    private inner class GameAdapter (val gamesIds: List<GameId>) : RecyclerView.Adapter<GameHolder>(){
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GameHolder {
             val itemView = LayoutInflater.from(parent.context).inflate(R.layout.game_item, parent, false)
             return GameHolder(itemView)
@@ -129,14 +171,24 @@ class GameTopFragment : Fragment(){
 
         override fun onBindViewHolder(holder: GameHolder, position: Int) {
             gamesIds[position].setRes(256,342)
-            holder.gameName?.text = gamesIds[position].name
-            holder.gameViewers?.text = gamesIds[position].viewers.toString()
-            holder.gameStreams?.text = gamesIds[position].streams.toString()
 
+            holder.gameName?.text = gamesIds[position].name
+
+            holder.gameViewers?.text = " " + viewModel.viewers[position].toString()
+            holder.gameStreams?.text = " " + viewModel.channels[position].toString()
             Picasso.get().load(gamesIds[position].posterUrl).into(holder.gamePoster)
+
+            if (viewModel.channels[position]==0){
+                backgroundDownloader.queueDownload(holder, gamesIds[position].id)
+            }
+            if (viewModel.channels[position]> 96) {
+                holder.gameViewers?.text = " > ${holder.gameViewers?.text}"
+                holder.gameStreams?.text = " > ${holder.gameStreams?.text}"
+            }
         }
 
         override fun getItemCount(): Int = gamesIds.size
+
     }
 
     companion object {

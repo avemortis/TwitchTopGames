@@ -5,6 +5,6 @@
     <string name="client_secret">kg0889qz423tcc80f1cx8mcvkv4k6o</string>
     <!--GAME ITEM-->
     <string name="game_name">Game</string>
-    <string name="viewers">Viewers: </string>
+    <string name="viewers">Viewers:</string>
     <string name="channels_online">Channels Online: </string>
 </resources>

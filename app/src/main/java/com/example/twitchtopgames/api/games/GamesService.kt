@@ -1,9 +1,10 @@
 package com.example.twitchtopgames.api.games
 
 import android.util.Log
+import androidx.annotation.WorkerThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.twitchtopgames.GamesStatLab
+import androidx.loader.content.AsyncTaskLoader
 import com.example.twitchtopgames.api.games.model.*
 import retrofit2.Call
 import retrofit2.Callback
@@ -66,5 +67,16 @@ class GamesService {
 
         })
         return streamsLiveData
+    }
+
+    @WorkerThread
+    fun loadStreams(
+        clientID: String,
+        accessesToken: String,
+        id: Int,
+        cursor: String = String()
+    ): Streams? {
+        val response = twitchApi.getStreams(clientID, accessesToken, cursor, 100, id).execute()
+        return response.body()
     }
 }

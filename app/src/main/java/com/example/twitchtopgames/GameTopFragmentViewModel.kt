@@ -5,11 +5,17 @@ import com.example.twitchtopgames.api.games.model.GameId
 
 class GameTopFragmentViewModel : ViewModel() {
     val games : MutableList<GameId> = mutableListOf()
+    val viewers : MutableList<Int> = mutableListOf()
+    val channels : MutableList<Int> = mutableListOf()
     var lastCursor: String = String()
 
     fun addNewPage(page: List<GameId>){
         page.forEach{ checked ->
-            if (cloneCheck(checked.id)) games.add(checked)
+            if (cloneCheck(checked.id)){
+                games.add(checked)
+                viewers.add(0)
+                channels.add(0)
+            }
         }
     }
 
