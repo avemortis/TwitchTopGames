@@ -1,0 +1,7 @@
+https://api.twitch.tv/helix/games/top?first=100&api_version=5&format=json&nojsoncallback=1&extras=data
+Client-Id: ex3glb4nkycm0yrhtjb8kk4mmxf6wc
+Authorization: Bearer vb0ajen7lxdejwr3rupogrpa33lgdh
+
+eyJzIjoyMCwiZCI6ZmFsc2UsInQiOnRydWV9
+
+509658

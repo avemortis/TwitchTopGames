@@ -26,7 +26,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/game_item_viewers"
+        android:id="@+id/static_string_viewers"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
@@ -36,22 +36,40 @@
         app:layout_constraintTop_toBottomOf="@+id/game_item_name" />
 
     <TextView
-        android:id="@+id/game_item_channels"
+        android:id="@+id/static_string_channels"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:textColor="@color/red"
         android:text="@string/channels_online"
+        android:textColor="@color/red"
         app:layout_constraintStart_toEndOf="@+id/game_item_poster"
-        app:layout_constraintTop_toBottomOf="@+id/game_item_viewers" />
+        app:layout_constraintTop_toBottomOf="@+id/static_string_viewers" />
 
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="8dp"
         android:layout_height="8dp"
         android:layout_marginEnd="2dp"
-        app:layout_constraintBottom_toBottomOf="@+id/game_item_channels"
-        app:layout_constraintEnd_toStartOf="@+id/game_item_channels"
-        app:layout_constraintTop_toTopOf="@+id/game_item_channels"
+        app:layout_constraintBottom_toBottomOf="@+id/static_string_channels"
+        app:layout_constraintEnd_toStartOf="@+id/static_string_channels"
+        app:layout_constraintTop_toTopOf="@+id/static_string_channels"
         app:srcCompat="@android:drawable/ic_notification_overlay" />
+
+    <TextView
+        android:id="@+id/game_item_channels"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/red"
+        app:layout_constraintBottom_toBottomOf="@+id/static_string_channels"
+        app:layout_constraintStart_toEndOf="@+id/static_string_channels"
+        app:layout_constraintTop_toTopOf="@+id/static_string_channels" />
+
+    <TextView
+        android:id="@+id/game_item_viewers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/purple_500"
+        app:layout_constraintBottom_toBottomOf="@+id/static_string_viewers"
+        app:layout_constraintStart_toEndOf="@+id/static_string_viewers"
+        app:layout_constraintTop_toTopOf="@+id/static_string_viewers" />
 </androidx.constraintlayout.widget.ConstraintLayout>

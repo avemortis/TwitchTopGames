@@ -1,14 +1,10 @@
 package com.example.twitchtopgames.api.games
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.Log
-import androidx.annotation.WorkerThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.twitchtopgames.api.games.model.GameId
-import com.example.twitchtopgames.api.games.model.TopIDsResponse
-import okhttp3.ResponseBody
+import com.example.twitchtopgames.GamesStatLab
+import com.example.twitchtopgames.api.games.model.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -30,26 +26,45 @@ class GamesService {
 
         twitchApi = retrofit.create(GamesAPI::class.java)
     }
-
-    fun getGames(clientID : String, accessesToken : String): LiveData<List<GameId>> {
-        val responseLiveData: MutableLiveData<List<GameId>> = MutableLiveData()
-        val twitchRequest: Call<TopIDsResponse> = twitchApi.getGames(clientID, "Bearer $accessesToken")
+    fun getGames(clientID : String, accessesToken : String, cursor: String = String()): LiveData<TopIDsResponse> {
+        val responseLiveData: MutableLiveData<TopIDsResponse> = MutableLiveData()
+        val twitchRequest: Call<TopIDsResponse> = twitchApi.getNextPage(clientID, "Bearer $accessesToken", cursor)
+        var topIDsResponse: TopIDsResponse?
 
         twitchRequest.enqueue(object : Callback<TopIDsResponse>{
             override fun onFailure(call: Call<TopIDsResponse>, t: Throwable) {
-                Log.e(TAG, "Failed to fetch photo", t)
+                Log.e(TAG, "Failed", t)
             }
             override fun onResponse(
                 call: Call<TopIDsResponse>,
                 IDsResponse: Response<TopIDsResponse>
             ) {
-                Log.d(TAG, "Call body ${IDsResponse}")
+                Log.d(TAG, "Call body $IDsResponse")
                 Log.d(TAG, "Response received")
-                val topIDsResponse: TopIDsResponse? = IDsResponse.body()
-                var gameIds: List<GameId> = topIDsResponse?.mGameIds?: mutableListOf()
-                responseLiveData.value = gameIds
+                topIDsResponse= IDsResponse.body()
+                responseLiveData.value = topIDsResponse
             }
         })
+
         return responseLiveData
+    }
+
+    fun getStreams(clientID: String, accessesToken: String, id: Int, cursor: String = String()) : LiveData<Streams>{
+        val streamsLiveData: MutableLiveData<Streams> = MutableLiveData()
+        val streamsRequest: Call<Streams> = twitchApi.getStreams(clientID, accessesToken, cursor, 100, id)
+        var streamResponse : Streams?
+
+        streamsRequest.enqueue(object : Callback<Streams>{
+            override fun onResponse(call: Call<Streams>, response: Response<Streams>) {
+                streamResponse = response.body()
+                streamsLiveData.value = streamResponse
+            }
+
+            override fun onFailure(call: Call<Streams>, t: Throwable) {
+                t.stackTrace
+            }
+
+        })
+        return streamsLiveData
     }
 }
