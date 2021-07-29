@@ -7,4 +7,7 @@
     <string name="game_name">Game</string>
     <string name="viewers">Viewers:</string>
     <string name="channels_online">Channels Online: </string>
+
+    <!--MAIN MENU -->
+    <string name="send_review">Send Review</string>
 </resources>

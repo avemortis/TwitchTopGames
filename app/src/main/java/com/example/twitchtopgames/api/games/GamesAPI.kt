@@ -1,5 +1,6 @@
 package com.example.twitchtopgames.api.games
 
+import com.example.twitchtopgames.api.games.model.Stats
 import com.example.twitchtopgames.api.games.model.Stream
 import com.example.twitchtopgames.api.games.model.Streams
 import com.example.twitchtopgames.api.games.model.TopIDsResponse
@@ -36,4 +37,12 @@ interface GamesAPI {
         //@Query("extras") extras: String = "data"
     ): Call<Streams>
 
+    @GET(
+        "kraken/streams/summary"
+    )
+    fun getStats(
+        @Query ("game" , encoded = true ) game: String,
+        @Header ("Accept") accept: String = "application/vnd.twitchtv.v5+json",
+        @Header ("Client-Id") clientID: String = "sd4grh0omdj9a31exnpikhrmsu3v46"
+    ): Call<Stats>
 }

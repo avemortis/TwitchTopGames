@@ -1,35 +1,35 @@
 package com.example.twitchtopgames
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.twitchtopgames.api.TwitchServices
 import com.example.twitchtopgames.api.games.model.GameId
-import com.example.twitchtopgames.api.games.model.Streams
+import com.example.twitchtopgames.api.games.model.Stats
 import com.squareup.picasso.Picasso
 
 private const val TAG = "GamesTopFragment"
-
 private const val TOKEN_TAG = "token_tag"
-private const val STATE_TAG = "state_tag"
 
 class GameTopFragment : Fragment(){
 
     private lateinit var clientId : String
     private lateinit var clientSecret : String
     var accessesToken : String = String()
+
+    var offlineMod : Boolean = true
 
     private lateinit var accessesLiveData : LiveData<String>
 
@@ -43,6 +43,7 @@ class GameTopFragment : Fragment(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
 
         clientId = getString(R.string.client_id)
         clientSecret = getString(R.string.client_secret)
@@ -58,22 +59,38 @@ class GameTopFragment : Fragment(){
 
         if(savedInstanceState!=null){
             accessesToken = savedInstanceState.getString(TOKEN_TAG)!!
-            backgroundDownloader.token = accessesToken
         }
 
         if (accessesToken.isEmpty()){
             accessesLiveData = services.accessesService.getAccessesToken(clientId, clientSecret)
             accessesLiveData.observe(
                 this,
-                {
-                        response ->
-                        accessesToken = response
-                        Log.d(TAG, accessesToken)
-                        backgroundDownloader.token = accessesToken
-                        getGames(accessesToken)
+                {   response ->
+                    accessesToken = response
+                    Log.d(TAG, accessesToken)
+                    viewModel.gamesStatsLiveData.removeObservers(this)
+                    viewModel.gamesIdsLiveData.removeObservers(this)
+                    clearDataBase()
+                    viewModel.games.clear()
+                    viewModel.stats.clear()
+                    gameAdapter.notifyDataSetChanged()
+                    loadGamesPage(accessesToken)
                 }
             )
+            loadFromDataBase()
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.twitch_top_games_menu, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.send_review -> sendReview()
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onCreateView(
@@ -95,7 +112,7 @@ class GameTopFragment : Fragment(){
         gameRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener(){
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 if (!recyclerView.canScrollVertically(1)){
-                    getGames(accessesToken, viewModel.lastCursor)
+                    loadGamesPage(accessesToken, viewModel.lastCursor)
                 }
                 super.onScrolled(recyclerView, dx, dy)
             }
@@ -123,7 +140,9 @@ class GameTopFragment : Fragment(){
         )
     }
 
-    fun getGames(token: String, cursor: String = String()) {
+
+
+    fun loadGamesPage(token: String, cursor: String = String()) {
         val services = TwitchServices.gamesService.getGames(clientId, token, cursor)
         services.observe(
             this,
@@ -135,7 +154,51 @@ class GameTopFragment : Fragment(){
         )
     }
 
-    private inner class GameHolder(item: View) : RecyclerView.ViewHolder(item){
+    fun clearDataBase(){
+        val repository = GameRepository.get()
+        viewModel.stats.forEach{
+            stat->
+            repository.deleteStat(stat)
+        }
+        viewModel.games.forEach{
+            game->
+            repository.deleteGame(game)
+        }
+    }
+
+    fun loadFromDataBase(){
+        viewModel.gamesIdsLiveData.observe(
+            this,
+            { list->
+                if (viewModel.games.isEmpty()){
+                    viewModel.games.addAll(list)
+                    Log.d(TAG, list.size.toString())
+                    gameAdapter.notifyDataSetChanged()
+                }
+            }
+        )
+        viewModel.gamesStatsLiveData.observe(
+            this,
+            { list->
+                if (viewModel.stats.isEmpty()){
+                    viewModel.stats.addAll(list)
+                    gameAdapter.notifyDataSetChanged()
+                }
+            }
+        )
+    }
+
+    fun sendReview(){
+        val recipient = Array(1) {"avemortis4@gmail.com"}
+        val email = Intent(Intent.ACTION_SEND, Uri.parse("mailto: "))
+        email.type= ("plain/text")
+        email.putExtra(Intent.EXTRA_EMAIL, recipient)
+        email.putExtra(Intent.EXTRA_SUBJECT, "App review")
+
+        startActivity(Intent.createChooser(email, "Choose an Email client:"))
+    }
+
+    inner class GameHolder(item: View) : RecyclerView.ViewHolder(item){
         var gameName: TextView? = null
         var gamePoster: ImageView? = null
         var gameViewers: TextView? = null
@@ -147,17 +210,16 @@ class GameTopFragment : Fragment(){
             gameViewers = item.findViewById(R.id.game_item_viewers)
             gameStreams = item.findViewById(R.id.game_item_channels)
         }
-        fun setStreams(streams : Streams){
+        fun setStreams(stat : Stats){
             val pos = gameRecyclerView.getChildAdapterPosition(itemView)
-            if (pos != -1){
-                var count = 0
-                streams.streams.forEach{
-                        stream ->
-                    count+=stream.viewers
+            if (pos != -1) {
+                stat.pos = pos
+                if (viewModel.stats[pos].channels == 0){
+                    val repository = GameRepository.get()
+                    repository.saveStats(stat)
                 }
 
-                viewModel.channels[pos] = streams.streams.size
-                viewModel.viewers[pos] = count
+                viewModel.stats[pos] = stat
                 gameAdapter.notifyItemChanged(pos)
             }
         }
@@ -174,17 +236,18 @@ class GameTopFragment : Fragment(){
 
             holder.gameName?.text = gamesIds[position].name
 
-            holder.gameViewers?.text = " " + viewModel.viewers[position].toString()
-            holder.gameStreams?.text = " " + viewModel.channels[position].toString()
-            Picasso.get().load(gamesIds[position].posterUrl).into(holder.gamePoster)
+            if (position < viewModel.stats.size){
+                holder.gameViewers?.text = " " + viewModel.stats[position].viewers.toString()
+                holder.gameStreams?.text = " " + viewModel.stats[position].channels.toString()
+                Picasso.get().load(gamesIds[position].posterUrl).into(holder.gamePoster)
 
-            if (viewModel.channels[position]==0){
-                backgroundDownloader.queueDownload(holder, gamesIds[position].id)
+
+                if (viewModel.stats[position].channels==0){
+                    backgroundDownloader.queueDownload(holder, viewModel.games[position].name)
+                }
             }
-            if (viewModel.channels[position]> 96) {
-                holder.gameViewers?.text = " > ${holder.gameViewers?.text}"
-                holder.gameStreams?.text = " > ${holder.gameStreams?.text}"
-            }
+
+
         }
 
         override fun getItemCount(): Int = gamesIds.size

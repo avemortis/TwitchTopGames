@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import com.example.twitchtopgames.api.TwitchServices
+import com.example.twitchtopgames.api.games.model.Stats
 import com.example.twitchtopgames.api.games.model.Streams
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
@@ -20,14 +21,12 @@ private const val MESSAGE_DOWNLOAD = 0
 class BackgroundDownloader <in T> (
     private val clientId: String,
     private val responseHandler: Handler,
-    private val onBackgroundDownloader: (T, Streams) -> Unit) : HandlerThread(TAG) {
-
-    lateinit var token: String
+    private val onBackgroundDownloader: (T, Stats) -> Unit) : HandlerThread(TAG) {
 
     val fragmentLifecycleObserver: LifecycleObserver = object : LifecycleObserver {
         @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
         fun setup(){
-            Log.i(TAG, "Starting background thread +${Random.nextBoolean()}")
+            Log.i(TAG, "Starting background thread}")
             start()
             looper
         }
@@ -51,7 +50,7 @@ class BackgroundDownloader <in T> (
 
     private var hasQuit = false
     private lateinit var requestHandler: Handler
-    private val requestMap = ConcurrentHashMap<T, Int>()
+    private val requestMap = ConcurrentHashMap<T, String>()
     private val service = TwitchServices.gamesService
 
     @Suppress("UNCHECKED_CAST")
@@ -77,9 +76,9 @@ class BackgroundDownloader <in T> (
 
 
 
-    fun queueDownload(target: T, id: Int, cursor: String = String()){
+    fun queueDownload(target: T, game: String){
         Log.i(TAG, "Got you!!")
-        requestMap[target] = id
+        requestMap[target] = game
         requestHandler.obtainMessage(MESSAGE_DOWNLOAD, target).sendToTarget()
     }
 
@@ -92,7 +91,7 @@ class BackgroundDownloader <in T> (
 
     private fun handleRequest(target: T) {
         val id = requestMap[target] ?: return
-        val streams = service.loadStreams(clientId, "Bearer $token", id) ?: return
+        val streams = service.loadStats(id) ?: return
         responseHandler.post(Runnable {
             if (requestMap[target] != id || hasQuit) {
                 return@Runnable

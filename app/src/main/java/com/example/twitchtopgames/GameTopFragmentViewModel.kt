@@ -1,20 +1,30 @@
 package com.example.twitchtopgames
 
+import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import com.example.twitchtopgames.api.games.model.GameId
+import com.example.twitchtopgames.api.games.model.Stats
+
+private const val TAG = "View Model"
 
 class GameTopFragmentViewModel : ViewModel() {
     val games : MutableList<GameId> = mutableListOf()
-    val viewers : MutableList<Int> = mutableListOf()
-    val channels : MutableList<Int> = mutableListOf()
+    val stats : MutableList<Stats> = mutableListOf()
+
+    val repository = GameRepository.get()
+    val gamesIdsLiveData = repository.getGamesId()
+    val gamesStatsLiveData = repository.getGamesStats()
+
     var lastCursor: String = String()
 
     fun addNewPage(page: List<GameId>){
         page.forEach{ checked ->
             if (cloneCheck(checked.id)){
+                checked.pos = games.size
                 games.add(checked)
-                viewers.add(0)
-                channels.add(0)
+                stats.add(Stats(0,0))
+                repository.saveGames(checked)
             }
         }
     }
@@ -25,4 +35,5 @@ class GameTopFragmentViewModel : ViewModel() {
         }
         return true
     }
+
 }

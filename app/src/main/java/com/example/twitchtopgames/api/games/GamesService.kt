@@ -12,6 +12,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.StringBuilder
 
 private const val TAG = "GamesService"
 
@@ -77,6 +78,21 @@ class GamesService {
         cursor: String = String()
     ): Streams? {
         val response = twitchApi.getStreams(clientID, accessesToken, cursor, 100, id).execute()
+        return response.body()
+    }
+
+    @WorkerThread
+    fun loadStats(
+        game: String
+    ): Stats? {
+        val sentense = game
+        var string: String = String()
+        sentense.forEach {
+            char->
+            if (char==' ') string+= '+'
+            else string+=char.lowercaseChar()
+        }
+        val response = twitchApi.getStats(string).execute()
         return response.body()
     }
 }
